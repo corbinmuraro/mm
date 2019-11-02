@@ -1,17 +1,57 @@
-<h2>Rectangle Creator</h2>
-<p>Count: <input id="count" value="5"></p>
+<p>
+  Width (mm)
+  <input type="number" step="1" id="width" />
+</p>
+<p>
+  Height (mm)
+  <input type="number" step="1" id="height" />
+</p>
+
 <button id="create">Create</button>
 <button id="cancel">Cancel</button>
 <script>
+  const widthField = document.getElementById("width");
+  const heightField = document.getElementById("height");
+  let ratio, width, height;
 
-document.getElementById('create').onclick = () => {
-  const textbox = document.getElementById('count');
-  const count = parseInt(textbox.value, 10);
-  parent.postMessage({ pluginMessage: { type: 'create-rectangles', count } }, '*')
-}
+  widthField.focus();
 
-document.getElementById('cancel').onclick = () => {
-  parent.postMessage({ pluginMessage: { type: 'cancel' } }, '*')
-}
+  // TODO: style like figma components. https://www.figma.com/file/Gj9iMcTbFbHrFq1ZWbDBuyc9/UI2%3A-Figma's-Design-System
 
+  function updateFields() {
+    widthField.value = width;
+    heightField.value = height;
+  }
+
+  widthField.addEventListener("input", function(evt) {
+    width = parseInt(widthField.value, 10);
+    height = width / ratio;
+    updateFields();
+  });
+
+  heightField.addEventListener("input", function(evt) {
+    height = parseInt(heightField.value, 10);
+    width = height * ratio;
+    updateFields();
+  });
+
+  onmessage = event => {
+    let message = event.data.pluginMessage;
+
+    width = message.width;
+    height = message.height;
+    ratio = message.width / message.height;
+
+    console.log(ratio);
+
+    updateFields();
+  };
+
+  document.getElementById("create").onclick = () => {
+    parent.postMessage({ pluginMessage: { type: "mm", width, height } }, "*");
+  };
+
+  document.getElementById("cancel").onclick = () => {
+    parent.postMessage({ pluginMessage: { type: "cancel" } }, "*");
+  };
 </script>

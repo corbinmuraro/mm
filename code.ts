@@ -1,37 +1,31 @@
-// This plugin will open a modal to prompt the user to enter a number, and
-// it will then create that many rectangles on the screen.
+const dpi = 72;
+const mmPerInch = 25.4;
+const dpm = dpi / mmPerInch;
 
-// This file holds the main code for the plugins. It has access to the *document*.
-// You can access browser APIs in the <script> tag inside "ui.html" which has a
-// full browser enviroment (see documentation).
-
-// This shows the HTML page in "ui.html".
-figma.showUI(__html__);
-
-// Calls to "parent.postMessage" from within the HTML page will trigger this
-// callback. The callback will be passed the "pluginMessage" property of the
-// posted message.
-figma.ui.onmessage = msg => {
-  // One way of distinguishing between different types of messages sent from
-  // your HTML page is to use an object with a "type" property like this.
-  const figmaDPI = 72;
-
-  if (msg.type === "create-rectangles") {
-    const nodes: SceneNode[] = [];
-    for (let i = 0; i < msg.count; i++) {
-      const rect = figma.createRectangle();
-      rect.x = i * 150;
-      rect.fills = [{ type: "SOLID", color: { r: 1, g: 0.5, b: 0 } }];
-      figma.currentPage.appendChild(rect);
-      nodes.push(rect);
-    }
-    figma.currentPage.selection = nodes;
-    figma.viewport.scrollAndZoomIntoView(nodes);
-  }
-
-  // Make sure to close the plugin when you're done. Otherwise the plugin will
-  // keep running, which shows the cancel button at the bottom of the screen.
+if (
+  !figma.currentPage.selection.length ||
+  figma.currentPage.selection.length > 1
+) {
+  figma.notify("Error: Please select 1 layer");
   figma.closePlugin();
-};
+} else {
+  figma.showUI(__html__);
 
-figma.notify("howdy");
+  const selection = figma.currentPage.selection[0];
+  let selectionDimensions = {
+    width: selection.width * dpm,
+    height: selection.height * dpm
+  };
+  figma.ui.postMessage(selectionDimensions);
+
+  figma.ui.onmessage = message => {
+    selectionDimensions.width = message.width / dpm;
+    selectionDimensions.height = message.height / dpm;
+
+    if (message.type === "mm") {
+      selection.resize(selectionDimensions.width, selectionDimensions.height);
+    }
+
+    figma.closePlugin();
+  };
+}
